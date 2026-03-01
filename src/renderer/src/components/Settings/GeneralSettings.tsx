@@ -54,6 +54,14 @@ export function GeneralSettings(): JSX.Element {
     settings.customApiKey !== originalSettings.customApiKey ||
     settings.customBaseUrl !== originalSettings.customBaseUrl ||
     settings.customModel !== originalSettings.customModel ||
+    // Ollama settings
+    settings.ollamaApiKey !== originalSettings.ollamaApiKey ||
+    settings.ollamaBaseUrl !== originalSettings.ollamaBaseUrl ||
+    settings.ollamaModel !== originalSettings.ollamaModel ||
+    // OpenAI settings
+    settings.openaiApiKey !== originalSettings.openaiApiKey ||
+    settings.openaiBaseUrl !== originalSettings.openaiBaseUrl ||
+    settings.openaiModel !== originalSettings.openaiModel ||
     // Other settings
     settings.memuApiKey !== originalSettings.memuApiKey ||
     settings.memuUserId !== originalSettings.memuUserId ||
@@ -81,6 +89,14 @@ export function GeneralSettings(): JSX.Element {
         // Zenmux settings
         zenmuxApiKey: settings.zenmuxApiKey,
         zenmuxModel: settings.zenmuxModel,
+        // Ollama settings
+        ollamaApiKey: settings.ollamaApiKey,
+        ollamaBaseUrl: settings.ollamaBaseUrl,
+        ollamaModel: settings.ollamaModel,
+        // OpenAI settings
+        openaiApiKey: settings.openaiApiKey,
+        openaiBaseUrl: settings.openaiBaseUrl,
+        openaiModel: settings.openaiModel,
         // Custom provider settings
         customApiKey: settings.customApiKey,
         customBaseUrl: settings.customBaseUrl,
@@ -238,6 +254,58 @@ export function GeneralSettings(): JSX.Element {
                     platform.minimaxi.com →
                   </a>
                 </p>
+              </div>
+            </div>
+          )}
+
+          {/* Ollama Settings */}
+          {settings.llmProvider === 'ollama' && (
+            <div className="space-y-3 p-3 rounded-xl bg-orange-500/5 border border-orange-500/20">
+              <div>
+                <label className="text-[11px] text-[var(--text-muted)] mb-1 block">Ollama Base URL</label>
+                <input
+                  type="text"
+                  placeholder="http://localhost:11434/v1"
+                  value={settings.ollamaBaseUrl || ''}
+                  onChange={(e) => setSettings({ ...settings, ollamaBaseUrl: e.target.value })}
+                  className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[13px] text-[var(--text-primary)] placeholder-[var(--text-placeholder)] focus:outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/10 transition-all"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-[var(--text-muted)] mb-1 block">Model Name</label>
+                <input
+                  type="text"
+                  placeholder="llama3"
+                  value={settings.ollamaModel || ''}
+                  onChange={(e) => setSettings({ ...settings, ollamaModel: e.target.value })}
+                  className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[13px] text-[var(--text-primary)] placeholder-[var(--text-placeholder)] focus:outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/10 transition-all"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* OpenAI Settings */}
+          {settings.llmProvider === 'openai' && (
+            <div className="space-y-3 p-3 rounded-xl bg-green-500/5 border border-green-500/20">
+              <div>
+                <label className="text-[11px] text-[var(--text-muted)] mb-1 block">API Key</label>
+                <input
+                  type="password"
+                  placeholder="sk-proj-..."
+                  value={settings.openaiApiKey || ''}
+                  onChange={(e) => setSettings({ ...settings, openaiApiKey: e.target.value })}
+                  className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[13px] text-[var(--text-primary)] placeholder-[var(--text-placeholder)] focus:outline-none focus:border-green-500/50 focus:ring-2 focus:ring-green-500/10 transition-all"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-[var(--text-muted)] mb-1 block">Model Name</label>
+                <input
+                  type="text"
+                  placeholder="gpt-4o"
+                  value={settings.openaiModel || ''}
+                  onChange={(e) => setSettings({ ...settings, openaiModel: e.target.value })}
+                  className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[13px] text-[var(--text-primary)] placeholder-[var(--text-placeholder)] focus:outline-none focus:border-green-500/50 focus:ring-2 focus:ring-green-500/10 transition-all"
+                />
               </div>
             </div>
           )}

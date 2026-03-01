@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 import path from 'path'
 import { app } from 'electron'
 import { loadSettings } from '../../config/settings.config'
@@ -17,7 +18,7 @@ export function getDefaultOutputDir(): string {
  * Create Anthropic client with current settings
  * Supports multiple providers: Claude, MiniMax, or custom Anthropic-compatible API
  */
-export async function createClient(): Promise<{ client: Anthropic; model: string; maxTokens: number; provider: string }> {
+export async function createClient(): Promise<{ client: Anthropic | OpenAI; model: string; maxTokens: number; provider: string }> {
   const settings = await loadSettings()
 
   const provider = settings.llmProvider || 'claude'
@@ -43,6 +44,16 @@ export async function createClient(): Promise<{ client: Anthropic; model: string
       baseURL = 'https://zenmux.ai/api/anthropic'
       model = settings.zenmuxModel
       break
+    case 'ollama':
+      apiKey = 'ollama'
+      baseURL = settings.ollamaBaseUrl || 'http://localhost:11434/v1'
+      model = settings.ollamaModel || 'llama3'
+      return { client: new OpenAI({ apiKey, baseURL }), model, maxTokens: settings.maxTokens, provider }
+    case 'openai':
+      apiKey = settings.openaiApiKey
+      baseURL = settings.openaiBaseUrl || 'https://api.openai.com/v1'
+      model = settings.openaiModel || 'gpt-4o'
+      return { client: new OpenAI({ apiKey, baseURL }), model, maxTokens: settings.maxTokens, provider }
     case 'custom':
       apiKey = settings.customApiKey
       baseURL = settings.customBaseUrl || undefined

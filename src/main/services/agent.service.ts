@@ -1,3 +1,5 @@
+import OpenAI from 'openai'
+import { runOpenAIAdapter } from './agent/openai-adapter'
 import Anthropic from '@anthropic-ai/sdk'
 import path from 'path'
 import { nativeImage } from 'electron'
@@ -1262,8 +1264,9 @@ export class AgentService {
       
       try {
         if (provider === 'claude') {
+          const anthropicClient = client as Anthropic;
           // Use beta API with context management for automatic tool result clearing
-          const betaResponse = await client.beta.messages.create({
+          const betaResponse = await anthropicClient.beta.messages.create({
             model,
             max_tokens: maxTokens,
             system: systemPrompt,
@@ -1290,6 +1293,23 @@ export class AgentService {
           }
           
           response = betaResponse as unknown as Anthropic.Message
+        } if (provider === 'ollama' || provider === 'openai') {
+          // 由于非 Claude 分支，这里沿用作者原本的压缩老旧 Tool Result 逻辑
+          const compacted = await compactToolResults(this.conversationHistory)
+          if (compacted > 0) {
+            console.log(`[Agent] Context compaction: offloaded ${compacted} old tool results to files`)
+          }
+
+          // 使用适配器调用 OpenAI / Ollama
+          response = await runOpenAIAdapter(
+            client as unknown as OpenAI, // 因为之前创建的可能是 Anthropic 联合类型
+            model,
+            maxTokens,
+            0.7,
+            systemPrompt,
+            tools,
+            this.conversationHistory
+          );
         } else {
           // For non-Claude providers: offload old large tool_results to files
           // LLM can use file_read to access the content on demand
@@ -1298,8 +1318,9 @@ export class AgentService {
             console.log(`[Agent] Context compaction: offloaded ${compacted} old tool results to files`)
           }
 
+          const anthropicClient = client as Anthropic;
           // Use standard API for non-Claude providers
-          response = await client.messages.create({
+          response = await anthropicClient.messages.create({
             model,
             max_tokens: maxTokens,
             system: systemPrompt,
@@ -1583,16 +1604,12 @@ export class AgentService {
       console.log('[Agent] Data summary:', data.summary.substring(0, 50) + '...')
 
       // Create client
-      const { client, model, maxTokens } = await createClient()
+      const { client, model, maxTokens, provider } = await createClient()
 
       // Build the evaluation prompt
       const evaluationPrompt = this.buildEvaluationPrompt(context, data)
 
-      // Single LLM call without tools
-      const response = await client.messages.create({
-        model,
-        max_tokens: Math.min(maxTokens, 1024), // Limit tokens for evaluation
-        system: `You are a STRICT evaluation assistant. Your job is to decide whether an event warrants notifying the user based on their EXACT expectations.
+      const evalSystemPrompt = `You are a STRICT evaluation assistant. Your job is to decide whether an event warrants notifying the user based on their EXACT expectations.
 
 You MUST respond with a valid JSON object in this exact format:
 {
@@ -1614,17 +1631,37 @@ STRICT Guidelines:
 - Keep the notification message concise and actionable
 - The reason should explain why you made this decision
 
-IMPORTANT: Respond with ONLY the JSON object, no additional text.`,
-        messages: [
-          {
-            role: 'user',
-            content: evaluationPrompt
-          }
-        ]
-      })
+IMPORTANT: Respond with ONLY the JSON object, no additional text.`
 
-      // Extract text response
-      const textContent = response.content.find((block) => block.type === 'text')
+      let textContent: Anthropic.TextBlock | undefined;
+
+      if (provider === 'ollama' || provider === 'openai') {
+        const response = await runOpenAIAdapter(
+          client as OpenAI,
+          model,
+          Math.min(maxTokens, 1024),
+          0.7,
+          evalSystemPrompt,
+          [],
+          [{ role: 'user', content: evaluationPrompt }]
+        );
+        textContent = response.content.find((block) => block.type === 'text') as Anthropic.TextBlock | undefined;
+      } else {
+        const anthropicClient = client as Anthropic;
+        const response = await anthropicClient.messages.create({
+          model,
+          max_tokens: Math.min(maxTokens, 1024),
+          system: evalSystemPrompt,
+          messages: [
+            {
+              role: 'user',
+              content: evaluationPrompt
+            }
+          ]
+        });
+        textContent = response.content.find((block) => block.type === 'text') as Anthropic.TextBlock | undefined;
+      }
+
       if (!textContent || textContent.type !== 'text') {
         return { success: false, error: 'No text response from LLM' }
       }

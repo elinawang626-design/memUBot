@@ -8,7 +8,7 @@ const SETTINGS_FILE = 'settings.json'
 /**
  * LLM Provider type
  */
-export type LLMProvider = 'claude' | 'minimax' | 'zenmux' | 'custom'
+export type LLMProvider = 'claude' | 'minimax' | 'zenmux' | 'ollama' | 'openai' | 'custom' 
 
 /**
  * Provider configurations
@@ -33,6 +33,16 @@ export const PROVIDER_CONFIGS: Record<LLMProvider, { name: string; baseUrl: stri
     name: 'Custom Provider',
     baseUrl: '',
     defaultModel: ''
+  },
+  ollama: {
+    name: 'Ollama',
+    baseUrl: 'http://localhost:11434/v1',
+    defaultModel: ''
+  },
+  openai: {
+    name: 'OpenAI',
+    baseUrl: 'https://api.openai.com/v1',
+    defaultModel: 'gpt-4o'
   }
 }
 
@@ -54,6 +64,16 @@ export interface AppSettings {
   // Zenmux settings
   zenmuxApiKey: string
   zenmuxModel: string
+
+  // Ollama settings
+  ollamaApiKey: string;
+  ollamaBaseUrl: string;
+  ollamaModel: string;
+
+  // OpenAI settings
+  openaiApiKey: string;
+  openaiBaseUrl: string;
+  openaiModel: string;
   
   // Custom provider settings
   customApiKey: string
@@ -143,6 +163,16 @@ const DEFAULT_SETTINGS: AppSettings = {
   // Zenmux settings
   zenmuxApiKey: '',
   zenmuxModel: '',
+
+  // Ollama settings
+  ollamaApiKey: 'ollama',
+  ollamaBaseUrl: 'http://localhost:11434/v1',
+  ollamaModel: '',
+
+  // OpenAI settings
+  openaiApiKey: '',
+  openaiBaseUrl: 'https://api.openai.com/v1',
+  openaiModel: 'gpt-4o',
   
   // Custom provider settings
   customApiKey: '',
@@ -333,6 +363,20 @@ class SettingsManager {
           model: this.settings.zenmuxModel,
           provider
         }
+        case 'ollama':
+          return {
+            apiKey: 'ollama',
+            baseUrl: this.settings.ollamaBaseUrl || 'http://localhost:11434/v1',
+            model: this.settings.ollamaModel || 'llama3',
+            provider
+          }
+        case 'openai':
+          return {
+            apiKey: this.settings.openaiApiKey,
+            baseUrl: '',
+            model: this.settings.openaiModel || 'gpt-4o',
+            provider
+          }
       case 'custom':
         return {
           apiKey: this.settings.customApiKey,

@@ -59,7 +59,7 @@ interface BotStatus {
 }
 
 // LLM Provider type
-type LLMProvider = 'claude' | 'minimax' | 'zenmux' | 'custom'
+type LLMProvider = 'claude' | 'minimax' | 'zenmux' | 'ollama' | 'openai' | 'custom'
 
 // App settings type
 interface AppSettings {
@@ -74,6 +74,14 @@ interface AppSettings {
   // Zenmux settings
   zenmuxApiKey: string
   zenmuxModel: string
+  // Ollama settings
+  ollamaApiKey: string
+  ollamaBaseUrl: string
+  ollamaModel: string
+  // OpenAI settings
+  openaiApiKey: string
+  openaiBaseUrl: string
+  openaiModel: string
   // Custom provider settings
   customApiKey: string
   customBaseUrl: string
