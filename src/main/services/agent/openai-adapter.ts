@@ -39,6 +39,14 @@ export function convertMessagesToOpenAI(
         const toolResults = msg.content.filter(b => b.type === 'tool_result') as Anthropic.ToolResultBlockParam[];
         const otherBlocks = msg.content.filter(b => b.type !== 'tool_result');
 
+        for (const tr of toolResults) {
+          messages.push({
+            role: 'tool',
+            tool_call_id: tr.tool_use_id,
+            content: typeof tr.content === 'string' ? tr.content : JSON.stringify(tr.content)
+          });
+        }
+
         if (otherBlocks.length > 0) {
           const contentParts = otherBlocks.map(b => {
             if (b.type === 'text') return { type: 'text' as const, text: b.text };
@@ -54,14 +62,6 @@ export function convertMessagesToOpenAI(
           if (contentParts.length > 0) {
             messages.push({ role: 'user', content: contentParts as OpenAI.Chat.ChatCompletionContentPart[] });
           }
-        }
-
-        for (const tr of toolResults) {
-          messages.push({
-            role: 'tool',
-            tool_call_id: tr.tool_use_id,
-            content: typeof tr.content === 'string' ? tr.content : JSON.stringify(tr.content)
-          });
         }
       }
     } else if (msg.role === 'assistant') {
@@ -114,6 +114,10 @@ export function convertOpenAIResponseToAnthropic(
         } as Anthropic.ToolUseBlock);
       }
     }
+  }
+
+  if (contentBlocks.length === 0) {
+    contentBlocks.push({ type: 'text', text: '' } as Anthropic.TextBlock);
   }
 
   const usage = {

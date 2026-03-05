@@ -193,7 +193,7 @@ export async function runGeminiAdapter(
       maxOutputTokens: maxTokens,
       temperature,
     },
-    systemInstruction: systemPrompt ? { role: 'system', parts: [{ text: systemPrompt }] } : undefined,
+    systemInstruction: systemPrompt || undefined,
   });
 
   const result = await genModel.generateContent({ contents });

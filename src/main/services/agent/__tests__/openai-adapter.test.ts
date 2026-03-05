@@ -194,15 +194,38 @@ describe('convertMessagesToOpenAI', () => {
       },
     ]);
     expect(result).toHaveLength(2);
-    expect(result[0].role).toBe('user');
-    expect((result[0] as { content: unknown[] }).content).toEqual([
-      { type: 'text', text: 'Here is context' },
-    ]);
-    expect(result[1]).toEqual({
+    expect(result[0]).toEqual({
       role: 'tool',
       tool_call_id: 'toolu_456',
       content: 'tool output',
     });
+    expect(result[1].role).toBe('user');
+    expect((result[1] as { content: unknown[] }).content).toEqual([
+      { type: 'text', text: 'Here is context' },
+    ]);
+  });
+
+  // tool messages must immediately follow the assistant message with tool_calls
+  it('emits tool messages before user messages in mixed content', () => {
+    const result = convertMessagesToOpenAI('', [
+      {
+        role: 'assistant',
+        content: [
+          { type: 'text', text: 'calling tool' },
+          { type: 'tool_use', id: 'toolu_A', name: 'search', input: { q: 'x' } },
+        ],
+      },
+      {
+        role: 'user',
+        content: [
+          { type: 'tool_result', tool_use_id: 'toolu_A', content: 'result' },
+          { type: 'text', text: 'extra context' },
+        ],
+      },
+    ]);
+    expect(result[0].role).toBe('assistant');
+    expect(result[1].role).toBe('tool');
+    expect(result[2].role).toBe('user');
   });
 
   it('joins multiple text blocks in assistant messages', () => {
@@ -348,5 +371,23 @@ describe('convertOpenAIResponseToAnthropic', () => {
     expect(result.content).toHaveLength(2);
     expect(result.content[0].type).toBe('text');
     expect(result.content[1].type).toBe('tool_use');
+  });
+
+  it('returns fallback empty text block when content and tool_calls are both absent', () => {
+    const result = convertOpenAIResponseToAnthropic(
+      makeCompletion({
+        choices: [
+          {
+            index: 0,
+            message: { role: 'assistant', content: null, refusal: null },
+            finish_reason: 'stop',
+            logprobs: null,
+          },
+        ],
+      })
+    );
+    expect(result.content).toHaveLength(1);
+    expect(result.content[0].type).toBe('text');
+    expect((result.content[0] as Anthropic.TextBlock).text).toBe('');
   });
 });
