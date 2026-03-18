@@ -4,6 +4,7 @@ import { loadSettings } from '../config/settings.config'
 import { runOpenAIAdapter } from './agent/openai-adapter'
 import { runGeminiAdapter, createToolUseIdMap } from './agent/gemini-adapter'
 import { detectCustomProtocol } from './agent/utils'
+import { getBashToolAccessDecision } from './bash-tool-access'
 import { agentService, type MessagePlatform } from './agent.service'
 import { proactiveStorage } from './proactive.storage'
 import { infraService, type IncomingMessageEvent, type OutgoingMessageEvent } from './infra.service'
@@ -177,12 +178,20 @@ class ProactiveService {
    * Includes: base tools, platform tools (macOS), MCP tools, and memu tools
    * Note: Messaging platform tools (telegram, discord, etc.) are NOT enabled
    */
-  private getTools(): Anthropic.Tool[] {
+  private async getTools(): Promise<Anthropic.Tool[]> {
     const baseTools = [...computerUseTools]
     const platformTools = getMacOSTools() // Returns empty array on non-macOS
     const mcpTools = mcpService.getTools()
-    
-    return [...baseTools, ...platformTools, ...mcpTools, ...memuTools]
+    const settings = await loadSettings()
+    const bashAccess = await getBashToolAccessDecision(
+      { platform: 'none', source: 'proactive' },
+      settings
+    )
+    const filteredBaseTools = bashAccess.allowed
+      ? baseTools
+      : baseTools.filter((tool) => tool.name !== 'bash')
+
+    return [...filteredBaseTools, ...platformTools, ...mcpTools, ...memuTools]
   }
 
   /**
@@ -583,7 +592,7 @@ class ProactiveService {
   private async runAgentLoop(): Promise<AgentResponse> {
     const { client, model, maxTokens, provider, geminiApiKey } = await this.createClient()
     const geminiToolIdMap = provider === 'gemini' ? createToolUseIdMap() : undefined
-    const tools = this.getTools()
+    const tools = await this.getTools()
 
     console.log('[Proactive] Starting agent loop')
     console.log(`[Proactive] Available tools: ${tools.map(t => t.name).join(', ')}`)
@@ -745,8 +754,13 @@ class ProactiveService {
       case 'computer':
         return await executeComputerTool(input as Parameters<typeof executeComputerTool>[0])
 
-      case 'bash':
+      case 'bash': {
+        const access = await getBashToolAccessDecision({ platform: 'none', source: 'proactive' })
+        if (!access.allowed) {
+          return { success: false, error: access.reason }
+        }
         return await executeBashTool(input as Parameters<typeof executeBashTool>[0])
+      }
 
       case 'str_replace_editor':
         return await executeTextEditorTool(input as Parameters<typeof executeTextEditorTool>[0])

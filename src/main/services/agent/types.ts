@@ -5,6 +5,15 @@ import type Anthropic from '@anthropic-ai/sdk'
  */
 export type MessagePlatform = 'telegram' | 'discord' | 'whatsapp' | 'slack' | 'line' | 'feishu' | 'none'
 
+export type ToolExecutionSource = 'message' | 'proactive' | 'system' | 'service'
+
+export interface ToolExecutionContext {
+  platform: MessagePlatform
+  source: ToolExecutionSource
+  userId?: string
+  isAuthorizedUser?: boolean
+}
+
 /**
  * Unmemorized message with metadata
  */
