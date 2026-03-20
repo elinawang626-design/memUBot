@@ -149,6 +149,7 @@ export interface AppSettings {
 
   // Debug/Dev features
   showAgentActivity: boolean
+  enableObservability: boolean
 
   // Search settings
   tavilyApiKey: string
@@ -244,6 +245,7 @@ const DEFAULT_SETTINGS: AppSettings = {
 
   // Debug/Dev features
   showAgentActivity: false,
+  enableObservability: true,
 
   // Search settings
   tavilyApiKey: '',
