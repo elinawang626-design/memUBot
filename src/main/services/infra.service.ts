@@ -9,7 +9,7 @@ import { SpanStatusCode } from '@opentelemetry/api'
 /**
  * Supported platforms for messaging
  */
-export type MessagePlatform = 'telegram' | 'discord' | 'slack' | 'whatsapp' | 'line' | 'feishu' | 'none'
+export type MessagePlatform = 'telegram' | 'discord' | 'slack' | 'whatsapp' | 'line' | 'feishu' | 'local' | 'none'
 
 /**
  * Event types for the infra bus

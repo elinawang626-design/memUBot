@@ -405,7 +405,7 @@ export class FeishuBotService {
 
     // Process with Agent
     if ((agentMessage || imageUrls.length > 0) && this.client) {
-      await this.processWithAgentAndReply(chatId, agentMessage, imageUrls, traceId)
+      await this.processWithAgentAndReply(chatId, senderId, agentMessage, imageUrls, traceId)
     }
   }
 
@@ -669,6 +669,7 @@ export class FeishuBotService {
    */
   private async processWithAgentAndReply(
     chatId: string,
+    userId: string,
     userMessage: string,
     imageUrls: string[] = [],
     traceId?: string
@@ -684,7 +685,10 @@ export class FeishuBotService {
         return
       }
 
-      const response = await agentService.processMessage(userMessage, 'feishu', imageUrls, chatId, traceId)
+      const response = await agentService.processMessage(userMessage, 'feishu', imageUrls, chatId, traceId, {
+        source: 'message',
+        userId
+      })
 
       // Check if rejected due to processing lock
       if (!response.success && response.busyWith) {
