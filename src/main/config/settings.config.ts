@@ -1,6 +1,7 @@
 import * as fs from 'fs/promises'
 import * as path from 'path'
 import { app } from 'electron'
+import type { MessagePlatform, ToolExecutionSource } from '../services/agent/types'
 import { secureStorage, isSensitiveField, SENSITIVE_FIELDS, type SensitiveField } from '../services/secure-storage.service'
 
 const CONFIG_DIR = 'config'
@@ -107,7 +108,7 @@ export interface AppSettings {
   enableSessionCompression: boolean
   maxArchives: number
   maxRecentMessages: number
-  archiveChunkSize: number
+  archiveChunkSize: number;
 
   memuBaseUrl: string
   memuApiKey: string
@@ -141,6 +142,11 @@ export interface AppSettings {
   feishuAppSecret: string
   feishuAutoConnect: boolean
 
+  // QQ settings
+  qqAppId: string
+  qqAppSecret: string
+  qqAutoConnect: boolean
+
   // General settings
   language: string
 
@@ -150,12 +156,22 @@ export interface AppSettings {
 
   // Debug/Dev features
   showAgentActivity: boolean
+  enableObservability: boolean
 
   // Search settings
   tavilyApiKey: string
 
   // Power settings
   preventSleep: boolean
+
+  // File access boundary (empty string = os.homedir())
+  fileAccessBoundaryRoot: string
+
+  // Bash tool security settings
+  bashToolEnabled: boolean
+  bashToolRequireAuthorizedUser: boolean
+  bashToolAllowedPlatforms: MessagePlatform[]
+  bashToolAllowedSources: ToolExecutionSource[]
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -237,6 +253,10 @@ const DEFAULT_SETTINGS: AppSettings = {
   feishuAppSecret: '',
   feishuAutoConnect: true,
 
+  qqAppId: '',
+  qqAppSecret: '',
+  qqAutoConnect: true,
+
   language: 'en',
 
   // Experimental features
@@ -245,12 +265,22 @@ const DEFAULT_SETTINGS: AppSettings = {
 
   // Debug/Dev features
   showAgentActivity: false,
+  enableObservability: true,
 
   // Search settings
   tavilyApiKey: '',
 
   // Power settings
-  preventSleep: true
+  preventSleep: true,
+
+  // File access boundary
+  fileAccessBoundaryRoot: '',
+
+  // Bash tool security settings
+  bashToolEnabled: true,
+  bashToolRequireAuthorizedUser: true,
+  bashToolAllowedPlatforms: ['telegram', 'discord', 'whatsapp', 'slack', 'line', 'feishu', 'local'],
+  bashToolAllowedSources: ['message'],
 }
 
 /**
