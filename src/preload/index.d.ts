@@ -683,6 +683,8 @@ interface MemorySearchInput {
   updated_before?: number
   min_confidence?: number
   min_importance?: number
+  exclude_sensitive?: boolean
+  conflict_state?: MemoryConflictState
 }
 
 interface MemoryApi {
