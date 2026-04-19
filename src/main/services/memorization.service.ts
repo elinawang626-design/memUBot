@@ -225,7 +225,28 @@ class MemorizationService {
       }
 
       const messages = allMessages.slice(0, MEMORIZE_MAX_MESSAGE_COUNT)
-      const { taskId, messageCount } = await provider.startMemorization(messages)
+      let taskId: string | null = null
+      let messageCount = 0
+
+      try {
+        const result = await provider.startMemorization(messages)
+        taskId = result.taskId
+        messageCount = result.messageCount
+      } catch (error) {
+        if (provider.kind === 'remote-memu') {
+          console.warn('[Memorization] Remote memorization crashed before task creation; falling back to local controlled memory')
+          const fallbackResult = await this.localMemoryProvider.startMemorization(messages)
+          if (fallbackResult.messageCount > 0) {
+            await memorizationStorage.removeFirstN(fallbackResult.messageCount)
+            await memorizationStorage.updateFirstMessageTimestamp()
+          }
+          await memorizationStorage.clearTaskState()
+          this.isMemorizing = false
+          return
+        }
+
+        throw error
+      }
 
       if (!taskId) {
         if (provider.kind === 'local-controlled-memory' && messageCount > 0) {

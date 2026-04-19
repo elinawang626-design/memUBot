@@ -22,7 +22,12 @@ async function getMemuConfig(): Promise<MemuConfig> {
 }
 
 function hasRemoteConfig(config: MemuConfig): boolean {
-  return !!(config.apiKey && config.apiKey.trim())
+  return !!(
+    config.apiKey && config.apiKey.trim() &&
+    config.baseUrl && config.baseUrl.trim() &&
+    config.userId && config.userId.trim() &&
+    config.agentId && config.agentId.trim()
+  )
 }
 
 async function executeLocalMemory(query: string): Promise<ToolResult> {
@@ -81,11 +86,34 @@ export async function executeMemuMemory(query: string): Promise<ToolResult> {
         typeof result === 'object' && result && 'message' in result && typeof (result as { message?: unknown }).message === 'string'
           ? (result as { message: string }).message
           : `memU retrieve failed with HTTP ${response.status}`
+
+      const fallback = await executeLocalMemory(query)
+      if (fallback.success) {
+        return {
+          success: true,
+          data: {
+            ...(typeof fallback.data === 'object' && fallback.data ? fallback.data as Record<string, unknown> : {}),
+            fallback_reason: message,
+          },
+        }
+      }
+
       return { success: false, error: message }
     }
 
     return { success: true, data: result }
   } catch (error) {
+    const fallback = await executeLocalMemory(query)
+    if (fallback.success) {
+      return {
+        success: true,
+        data: {
+          ...(typeof fallback.data === 'object' && fallback.data ? fallback.data as Record<string, unknown> : {}),
+          fallback_reason: error instanceof Error ? error.message : String(error),
+        },
+      }
+    }
+
     return { success: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
